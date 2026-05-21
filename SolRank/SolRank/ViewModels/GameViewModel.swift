@@ -11,10 +11,13 @@ final class GameViewModel: ObservableObject {
     @Published var levelUpEvent: LevelUpEvent?   // drives the celebration overlay
 
     private let service: GameService
+    private let feedService: FeedService
     private let recentEntryCap = 100
+    private let streakMilestones = [7, 30, 100]
 
-    init(service: GameService = GameService()) {
+    init(service: GameService = GameService(), feedService: FeedService = FeedService()) {
         self.service = service
+        self.feedService = feedService
     }
 
     var needsOnboarding: Bool { !isLoading && character == nil }
@@ -63,11 +66,23 @@ final class GameViewModel: ObservableObject {
         char.trackedStats[index].dailyValue += amount
         char.trackedStats[index].lifetimeTotal += amount
 
-        let xp = amount * char.trackedStats[index].definition.xpPerUnit
-        applyXP(&char, definition: char.trackedStats[index].definition, xp: xp)
+        let definition = char.trackedStats[index].definition
+        let xp = amount * definition.xpPerUnit
+        applyXP(&char, definition: definition, xp: xp)
         appendEntry(&char, statID: statID, value: amount, xp: xp)
 
+        let authorID = char.ownerID
+        let authorName = char.name
         commit(char)
+
+        emitFeed(
+            authorID: authorID,
+            authorUsername: authorName,
+            type: .statLogged,
+            message: "logged \(formatLog(amount)) \(definition.name.lowercased())",
+            xp: Int(xp.rounded()),
+            category: definition.category
+        )
         return xp
     }
 
@@ -91,6 +106,31 @@ final class GameViewModel: ObservableObject {
             updateStreak(&char.trackedStats[index], loggedYes: true)
             applyXP(&char, definition: definition, xp: xpPerCompletion)
             appendEntry(&char, statID: statID, value: 1, xp: xpPerCompletion)
+
+            let authorID = char.ownerID
+            let authorName = char.name
+            let streak = char.trackedStats[index].currentStreak
+            commit(char)
+
+            emitFeed(
+                authorID: authorID,
+                authorUsername: authorName,
+                type: .statLogged,
+                message: "completed \(definition.name.lowercased())",
+                xp: Int(xpPerCompletion.rounded()),
+                category: definition.category
+            )
+            if streakMilestones.contains(streak) {
+                let label = definition.category?.rawValue ?? definition.name
+                emitFeed(
+                    authorID: authorID,
+                    authorUsername: authorName,
+                    type: .streakMilestone,
+                    message: "is on a \(streak)-day \(label) streak 🔥",
+                    xp: nil,
+                    category: definition.category
+                )
+            }
         } else {
             // Undo today's completion.
             char.trackedStats[index].dailyValue = 0
@@ -98,9 +138,8 @@ final class GameViewModel: ObservableObject {
             updateStreak(&char.trackedStats[index], loggedYes: false)
             applyXP(&char, definition: definition, xp: -xpPerCompletion)
             char.recentEntries.removeAll { $0.statID == statID && Calendar.current.isDateInToday($0.timestamp) }
+            commit(char)
         }
-
-        commit(char)
     }
 
     // MARK: - Stat management
@@ -151,6 +190,14 @@ final class GameViewModel: ObservableObject {
             char.categoryProgress[key] = progress
             if progress.level > before {
                 levelUpEvent = LevelUpEvent(title: category.rawValue, icon: category.icon, newLevel: progress.level)
+                emitFeed(
+                    authorID: char.ownerID,
+                    authorUsername: char.name,
+                    type: .levelUp,
+                    message: "reached \(category.rawValue) Level \(progress.level) \(category.icon)",
+                    xp: nil,
+                    category: category
+                )
             }
         } else if let barID = definition.customXPBarID,
                   let barIndex = char.customXPBars.firstIndex(where: { $0.id == barID }) {
@@ -159,6 +206,14 @@ final class GameViewModel: ObservableObject {
             if char.customXPBars[barIndex].level > before {
                 let bar = char.customXPBars[barIndex]
                 levelUpEvent = LevelUpEvent(title: bar.name, icon: "⭐️", newLevel: bar.level)
+                emitFeed(
+                    authorID: char.ownerID,
+                    authorUsername: char.name,
+                    type: .levelUp,
+                    message: "reached \(bar.name) Level \(bar.level) ⭐️",
+                    xp: nil,
+                    category: nil
+                )
             }
         }
         // Custom stat with no XP bar → no XP, by design.
@@ -205,6 +260,31 @@ final class GameViewModel: ObservableObject {
     private func persist() async {
         guard let char = character else { return }
         try? await service.saveCharacter(char)
+    }
+
+    // MARK: - Feed emission
+
+    private func emitFeed(
+        authorID: String,
+        authorUsername: String,
+        type: FeedEventType,
+        message: String,
+        xp: Int?,
+        category: Constants.XPCategory?
+    ) {
+        let event = FeedEvent(
+            authorID: authorID,
+            authorUsername: authorUsername,
+            type: type,
+            message: message,
+            xpGained: xp,
+            statCategory: category
+        )
+        Task { try? await feedService.postEvent(event) }
+    }
+
+    private func formatLog(_ value: Double) -> String {
+        value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
     }
 }
 
