@@ -3,10 +3,10 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject private var gameVM: GameViewModel
     @EnvironmentObject private var authVM: AuthViewModel
-    @State private var selectedTab = 2 // Home is default
+    @EnvironmentObject private var router: AppRouter
 
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $router.selectedTab) {
             FeedView(
                 currentUserID: authVM.appUser?.id ?? "",
                 username: gameVM.character?.name ?? authVM.appUser?.displayName ?? "Me",
@@ -44,18 +44,6 @@ struct MainTabView: View {
 }
 
 // MARK: - Placeholder tab views (built out in later sessions)
-
-struct CompeteView: View {
-    var body: some View {
-        NavigationStack {
-            Text("Compete — Coming Soon")
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.background)
-                .navigationTitle("Compete")
-        }
-    }
-}
 
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel

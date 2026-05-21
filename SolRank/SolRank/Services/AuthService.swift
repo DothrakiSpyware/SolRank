@@ -120,6 +120,12 @@ final class AuthService: NSObject, ObservableObject {
 
     // MARK: - Firestore user sync
 
+    /// Re-reads the current user's document to refresh cached fields like points.
+    func reloadAppUser() async {
+        guard let firebaseUser else { return }
+        await loadOrCreateAppUser(for: firebaseUser)
+    }
+
     private func loadOrCreateAppUser(for firebaseUser: User) async {
         let db = Firestore.firestore()
         let ref = db.collection(Constants.Firestore.users).document(firebaseUser.uid)
