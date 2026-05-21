@@ -7,8 +7,7 @@ final class AuthViewModel: ObservableObject {
     @Published var authState: AuthService.AuthState = .loading
     @Published var errorMessage: String?
     @Published var isLoading = false
-
-    var appUser: AppUser? { authService.appUser }
+    @Published private(set) var appUser: AppUser?
 
     private let authService: AuthService
     private var cancellables = Set<AnyCancellable>()
@@ -18,6 +17,14 @@ final class AuthViewModel: ObservableObject {
         authService.$authState
             .receive(on: DispatchQueue.main)
             .assign(to: &$authState)
+        authService.$appUser
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$appUser)
+    }
+
+    /// Re-reads the user document (e.g. after points move in a challenge).
+    func refreshUser() async {
+        await authService.reloadAppUser()
     }
 
     // MARK: - Sign in with Apple

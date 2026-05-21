@@ -12,12 +12,22 @@ final class GameViewModel: ObservableObject {
 
     private let service: GameService
     private let feedService: FeedService
+    private let challengeService: ChallengeService
     private let recentEntryCap = 100
     private let streakMilestones = [7, 30, 100]
 
-    init(service: GameService = GameService(), feedService: FeedService = FeedService()) {
+    /// Cached active challenges the user is in, used to route logged values into
+    /// challenge progress. Refreshed on load; only stat membership is read from it.
+    private var activeChallenges: [Challenge] = []
+
+    init(
+        service: GameService = GameService(),
+        feedService: FeedService = FeedService(),
+        challengeService: ChallengeService = ChallengeService()
+    ) {
         self.service = service
         self.feedService = feedService
+        self.challengeService = challengeService
     }
 
     var needsOnboarding: Bool { !isLoading && character == nil }
@@ -37,6 +47,23 @@ final class GameViewModel: ObservableObject {
         } catch {
             // Offline / first run: leave character nil so onboarding can proceed.
             character = nil
+        }
+        await refreshChallenges(for: userID)
+    }
+
+    /// Reloads the user's active challenges so logging can feed their progress.
+    func refreshChallenges(for userID: String) async {
+        activeChallenges = (try? await challengeService.fetchActiveChallenges(for: userID)) ?? []
+    }
+
+    /// Routes a logged value into any active challenge that tracks this stat.
+    private func submitChallengeProgress(statID: String, value: Double) {
+        guard let userID = character?.ownerID, value > 0 else { return }
+        let relevant = activeChallenges.filter {
+            $0.status == .active && $0.participantIDs.contains(userID) && $0.statIDs.contains(statID)
+        }
+        for challenge in relevant {
+            Task { try? await challengeService.submitProgress(challengeID: challenge.id, userID: userID, value: value) }
         }
     }
 
@@ -83,6 +110,7 @@ final class GameViewModel: ObservableObject {
             xp: Int(xp.rounded()),
             category: definition.category
         )
+        submitChallengeProgress(statID: statID, value: amount)
         return xp
     }
 
@@ -131,6 +159,7 @@ final class GameViewModel: ObservableObject {
                     category: definition.category
                 )
             }
+            submitChallengeProgress(statID: statID, value: 1)
         } else {
             // Undo today's completion.
             char.trackedStats[index].dailyValue = 0

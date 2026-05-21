@@ -6,6 +6,7 @@ import GoogleSignIn
 struct SolRankApp: App {
     @StateObject private var authVM: AuthViewModel
     @StateObject private var gameVM = GameViewModel()
+    @StateObject private var router = AppRouter()
 
     init() {
         FirebaseApp.configure()
@@ -18,6 +19,7 @@ struct SolRankApp: App {
             RootView()
                 .environmentObject(authVM)
                 .environmentObject(gameVM)
+                .environmentObject(router)
                 .onOpenURL { url in
                     // Required for Google Sign-In OAuth callback
                     GIDSignIn.sharedInstance.handle(url)

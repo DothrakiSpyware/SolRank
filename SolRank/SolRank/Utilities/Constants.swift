@@ -37,6 +37,7 @@ enum Constants {
         static let characters = "characters"
         static let stats = "stats"
         static let challenges = "challenges"
+        static let challengeInvites = "challengeInvites"
         static let leagues = "leagues"
         static let feedEvents = "feedEvents"
     }
