@@ -3,10 +3,14 @@ import SwiftUI
 struct CompeteView: View {
     @EnvironmentObject private var authVM: AuthViewModel
     @EnvironmentObject private var gameVM: GameViewModel
-    @StateObject private var viewModel = ChallengeViewModel()
+    @StateObject private var challengeVM = ChallengeViewModel()
+    @StateObject private var leagueVM = LeagueViewModel()
 
-    @State private var tab = 0   // 0 = Active, 1 = Past
-    @State private var showCreate = false
+    @State private var mode = 0          // 0 = Challenges, 1 = Leagues
+    @State private var subTab = 0        // 0 = Active, 1 = Past
+    @State private var showCreateChooser = false
+    @State private var showCreateChallenge = false
+    @State private var showCreateLeague = false
 
     private var userID: String { authVM.appUser?.id ?? "" }
 
@@ -14,11 +18,8 @@ struct CompeteView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    if !viewModel.pendingInvites.isEmpty {
-                        invitesSection
-                    }
-                    picker
-                    challengeList
+                    modePicker
+                    if mode == 0 { challengesContent } else { leaguesContent }
                 }
                 .padding(.vertical, 12)
             }
@@ -26,50 +27,46 @@ struct CompeteView: View {
             .navigationTitle("Compete")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showCreate = true } label: {
-                        Image(systemName: "plus")
-                    }
+                    Button { showCreateChooser = true } label: { Image(systemName: "plus") }
                 }
             }
-            .sheet(isPresented: $showCreate) {
-                CreateChallengeView(challengeVM: viewModel)
+            .confirmationDialog("Create", isPresented: $showCreateChooser, titleVisibility: .visible) {
+                Button("Challenge") { showCreateChallenge = true }
+                Button("League") { showCreateLeague = true }
+                Button("Cancel", role: .cancel) {}
             }
-            .refreshable { await viewModel.loadData(for: userID) }
+            .sheet(isPresented: $showCreateChallenge) {
+                CreateChallengeView(challengeVM: challengeVM)
+            }
+            .sheet(isPresented: $showCreateLeague) {
+                CreateLeagueView(leagueVM: leagueVM)
+            }
+            .refreshable { await reload() }
         }
         .task(id: userID) {
             guard !userID.isEmpty else { return }
-            await viewModel.loadData(for: userID)
+            await reload()
             await gameVM.refreshChallenges(for: userID)
+            await gameVM.refreshLeagues(for: userID)
         }
     }
 
-    // MARK: - Invites
-
-    private var invitesSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("INVITES")
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(viewModel.pendingInvites) { invite in
-                        InviteCard(
-                            invite: invite,
-                            canAfford: (authVM.appUser?.pointsBalance ?? 0) >= invite.wagerAmount,
-                            onAccept: {
-                                if let user = authVM.appUser { viewModel.acceptInvite(invite, user: user) }
-                            },
-                            onDecline: { viewModel.declineInvite(invite) }
-                        )
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-        }
+    private func reload() async {
+        await challengeVM.loadData(for: userID)
+        await leagueVM.loadData(for: userID)
     }
 
-    // MARK: - Picker + list
+    private var modePicker: some View {
+        Picker("", selection: $mode) {
+            Text("Challenges").tag(0)
+            Text("Leagues").tag(1)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+    }
 
-    private var picker: some View {
-        Picker("", selection: $tab) {
+    private var subTabPicker: some View {
+        Picker("", selection: $subTab) {
             Text("Active").tag(0)
             Text("Past").tag(1)
         }
@@ -77,24 +74,39 @@ struct CompeteView: View {
         .padding(.horizontal, 16)
     }
 
+    // MARK: - Challenges
+
     @ViewBuilder
-    private var challengeList: some View {
-        let items = tab == 0 ? viewModel.activeChallenges : viewModel.pastChallenges
-        if viewModel.isLoading && items.isEmpty {
+    private var challengesContent: some View {
+        if !challengeVM.pendingInvites.isEmpty {
+            invitesHeader("CHALLENGE INVITES")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(challengeVM.pendingInvites) { invite in
+                        ChallengeInviteCard(
+                            invite: invite,
+                            canAfford: (authVM.appUser?.pointsBalance ?? 0) >= invite.wagerAmount,
+                            onAccept: { if let user = authVM.appUser { challengeVM.acceptInvite(invite, user: user) } },
+                            onDecline: { challengeVM.declineInvite(invite) }
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        subTabPicker
+        let items = subTab == 0 ? challengeVM.activeChallenges : challengeVM.pastChallenges
+        if challengeVM.isLoading && items.isEmpty {
             ProgressView().tint(Theme.gold).padding(.top, 40)
         } else if items.isEmpty {
-            emptyState
+            emptyState(icon: subTab == 0 ? "⚔️" : "📜", text: subTab == 0 ? "No active challenges" : "No past challenges", hint: subTab == 0)
         } else {
             LazyVStack(spacing: 12) {
                 ForEach(items) { challenge in
                     NavigationLink {
                         ChallengeDetailView(challenge: challenge, currentUserID: userID)
                     } label: {
-                        ChallengeRowView(
-                            challenge: challenge,
-                            currentUserID: userID,
-                            dimmed: tab == 1
-                        )
+                        ChallengeRowView(challenge: challenge, currentUserID: userID, dimmed: subTab == 1)
                     }
                     .buttonStyle(.plain)
                 }
@@ -103,49 +115,133 @@ struct CompeteView: View {
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            Text(tab == 0 ? "⚔️" : "📜").font(.system(size: 48))
-            Text(tab == 0 ? "No active challenges" : "No past challenges")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.white)
-            if tab == 0 {
-                Text("Tap + to start one.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.gray)
+    // MARK: - Leagues
+
+    @ViewBuilder
+    private var leaguesContent: some View {
+        if !leagueVM.pendingInvites.isEmpty {
+            invitesHeader("LEAGUE INVITES")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(leagueVM.pendingInvites) { invite in
+                        LeagueInviteCard(
+                            invite: invite,
+                            canAfford: (authVM.appUser?.pointsBalance ?? 0) >= invite.entryWager,
+                            onAccept: { if let user = authVM.appUser { leagueVM.acceptInvite(invite, user: user) } },
+                            onDecline: { leagueVM.declineInvite(invite) }
+                        )
+                    }
+                }
+                .padding(.horizontal, 16)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 60)
+        subTabPicker
+        let items = subTab == 0 ? leagueVM.activeLeagues : leagueVM.pastLeagues
+        if leagueVM.isLoading && items.isEmpty {
+            ProgressView().tint(Theme.gold).padding(.top, 40)
+        } else if items.isEmpty {
+            emptyState(icon: subTab == 0 ? "🏆" : "📜", text: subTab == 0 ? "No active leagues" : "No past leagues", hint: subTab == 0)
+        } else {
+            LazyVStack(spacing: 12) {
+                ForEach(items) { league in
+                    NavigationLink {
+                        LeagueDetailView(league: league, currentUserID: userID, initialEntries: leagueVM.entries(for: league))
+                    } label: {
+                        LeagueRowView(league: league, entries: leagueVM.entries(for: league), currentUserID: userID, dimmed: subTab == 1)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
     }
 
-    private func sectionTitle(_ text: String) -> some View {
+    // MARK: - Shared pieces
+
+    private func invitesHeader(_ text: String) -> some View {
         Text(text)
             .font(.system(size: 12, weight: .bold))
             .foregroundStyle(.gray)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
     }
+
+    private func emptyState(icon: String, text: String, hint: Bool) -> some View {
+        VStack(spacing: 10) {
+            Text(icon).font(.system(size: 48))
+            Text(text).font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+            if hint {
+                Text("Tap + to start one.").font(.system(size: 14)).foregroundStyle(.gray)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 60)
+    }
 }
 
-// MARK: - Invite card
+// MARK: - Challenge invite card
 
-private struct InviteCard: View {
+private struct ChallengeInviteCard: View {
     let invite: ChallengeInvite
     let canAfford: Bool
     let onAccept: () -> Void
     let onDecline: () -> Void
 
     var body: some View {
+        InviteCardShell(
+            title: invite.challengeTitle,
+            from: invite.fromUsername,
+            subtitle: invite.statNames.joined(separator: " · "),
+            wager: invite.wagerAmount,
+            canAfford: canAfford,
+            onAccept: onAccept,
+            onDecline: onDecline
+        )
+    }
+}
+
+// MARK: - League invite card
+
+private struct LeagueInviteCard: View {
+    let invite: LeagueInvite
+    let canAfford: Bool
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
+        InviteCardShell(
+            title: invite.leagueName,
+            from: invite.fromUsername,
+            subtitle: invite.statNames.joined(separator: " · "),
+            wager: invite.entryWager,
+            canAfford: canAfford,
+            onAccept: onAccept,
+            onDecline: onDecline
+        )
+    }
+}
+
+// MARK: - Shared invite card layout
+
+private struct InviteCardShell: View {
+    let title: String
+    let from: String
+    let subtitle: String
+    let wager: Int
+    let canAfford: Bool
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(invite.challengeTitle)
+            Text(title)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.white)
                 .lineLimit(1)
-            Text("from \(invite.fromUsername)")
+            Text("from \(from)")
                 .font(.system(size: 12))
                 .foregroundStyle(.gray)
-            Text(invite.statNames.joined(separator: " · "))
+            Text(subtitle)
                 .font(.system(size: 12))
                 .foregroundStyle(.gray)
                 .lineLimit(1)
@@ -154,7 +250,7 @@ private struct InviteCard: View {
 
             HStack(spacing: 8) {
                 Button(action: onAccept) {
-                    Text(invite.wagerAmount > 0 ? "Accept · 🪙\(invite.wagerAmount)" : "Accept")
+                    Text(wager > 0 ? "Accept · 🪙\(wager)" : "Accept")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.black)
                         .frame(maxWidth: .infinity)

@@ -13,6 +13,7 @@ final class GameViewModel: ObservableObject {
     private let service: GameService
     private let feedService: FeedService
     private let challengeService: ChallengeService
+    private let leagueService: LeagueService
     private let recentEntryCap = 100
     private let streakMilestones = [7, 30, 100]
 
@@ -20,14 +21,20 @@ final class GameViewModel: ObservableObject {
     /// challenge progress. Refreshed on load; only stat membership is read from it.
     private var activeChallenges: [Challenge] = []
 
+    /// Cached active leagues the user is in, used to route logged values into
+    /// league scoring. Refreshed on load.
+    private var activeLeagues: [League] = []
+
     init(
         service: GameService = GameService(),
         feedService: FeedService = FeedService(),
-        challengeService: ChallengeService = ChallengeService()
+        challengeService: ChallengeService = ChallengeService(),
+        leagueService: LeagueService = LeagueService()
     ) {
         self.service = service
         self.feedService = feedService
         self.challengeService = challengeService
+        self.leagueService = leagueService
     }
 
     var needsOnboarding: Bool { !isLoading && character == nil }
@@ -49,11 +56,17 @@ final class GameViewModel: ObservableObject {
             character = nil
         }
         await refreshChallenges(for: userID)
+        await refreshLeagues(for: userID)
     }
 
     /// Reloads the user's active challenges so logging can feed their progress.
     func refreshChallenges(for userID: String) async {
         activeChallenges = (try? await challengeService.fetchActiveChallenges(for: userID)) ?? []
+    }
+
+    /// Reloads the user's active leagues so logging can feed their scoring.
+    func refreshLeagues(for userID: String) async {
+        activeLeagues = (try? await leagueService.fetchActiveLeagues(for: userID)) ?? []
     }
 
     /// Routes a logged value into any active challenge that tracks this stat.
@@ -64,6 +77,25 @@ final class GameViewModel: ObservableObject {
         }
         for challenge in relevant {
             Task { try? await challengeService.submitProgress(challengeID: challenge.id, userID: userID, value: value) }
+        }
+    }
+
+    /// Routes a logged value into any active league that scores this stat.
+    private func submitLeagueProgress(statID: String, value: Double, isBooleanStat: Bool) {
+        guard let userID = character?.ownerID, value > 0 else { return }
+        let relevant = activeLeagues.filter {
+            $0.status == .active && $0.memberIDs.contains(userID) && $0.statConfigs.contains { $0.statID == statID }
+        }
+        for league in relevant {
+            Task {
+                try? await leagueService.submitLeagueProgress(
+                    leagueID: league.id,
+                    userID: userID,
+                    statID: statID,
+                    value: value,
+                    isBooleanStat: isBooleanStat
+                )
+            }
         }
     }
 
@@ -111,6 +143,7 @@ final class GameViewModel: ObservableObject {
             category: definition.category
         )
         submitChallengeProgress(statID: statID, value: amount)
+        submitLeagueProgress(statID: statID, value: amount, isBooleanStat: false)
         return xp
     }
 
@@ -160,6 +193,7 @@ final class GameViewModel: ObservableObject {
                 )
             }
             submitChallengeProgress(statID: statID, value: 1)
+            submitLeagueProgress(statID: statID, value: 1, isBooleanStat: true)
         } else {
             // Undo today's completion.
             char.trackedStats[index].dailyValue = 0

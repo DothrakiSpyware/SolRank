@@ -39,6 +39,8 @@ enum Constants {
         static let challenges = "challenges"
         static let challengeInvites = "challengeInvites"
         static let leagues = "leagues"
+        static let leagueInvites = "leagueInvites"
+        static let leagueEntries = "leagueEntries"
         static let feedEvents = "feedEvents"
     }
 
