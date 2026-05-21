@@ -2,13 +2,18 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject private var gameVM: GameViewModel
+    @EnvironmentObject private var authVM: AuthViewModel
     @State private var selectedTab = 2 // Home is default
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            FeedView()
-                .tabItem { Label("Feed", systemImage: "person.2.fill") }
-                .tag(0)
+            FeedView(
+                currentUserID: authVM.appUser?.id ?? "",
+                username: gameVM.character?.name ?? authVM.appUser?.displayName ?? "Me",
+                friendIDs: authVM.appUser?.friendIDs ?? []
+            )
+            .tabItem { Label("Feed", systemImage: "person.2.fill") }
+            .tag(0)
 
             CompeteView()
                 .tabItem { Label("Compete", systemImage: "trophy.fill") }
@@ -39,18 +44,6 @@ struct MainTabView: View {
 }
 
 // MARK: - Placeholder tab views (built out in later sessions)
-
-struct FeedView: View {
-    var body: some View {
-        NavigationStack {
-            Text("Feed — Coming Soon")
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.background)
-                .navigationTitle("Feed")
-        }
-    }
-}
 
 struct CompeteView: View {
     var body: some View {
