@@ -2,20 +2,40 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var gameVM: GameViewModel
 
     var body: some View {
-        switch authVM.authState {
-        case .loading:
+        Group {
+            switch authVM.authState {
+            case .loading:
+                SplashView()
+            case .unauthenticated:
+                SignInView()
+            case .authenticated:
+                authenticatedFlow
+            }
+        }
+        .preferredColorScheme(.dark)
+        // Reload the character whenever the signed-in user changes.
+        .task(id: authVM.appUser?.id) {
+            guard let userID = authVM.appUser?.id else { return }
+            await gameVM.load(userID: userID)
+        }
+    }
+
+    @ViewBuilder
+    private var authenticatedFlow: some View {
+        if gameVM.isLoading {
             SplashView()
-        case .unauthenticated:
-            SignInView()
-        case .authenticated:
+        } else if gameVM.needsOnboarding {
+            OnboardingView()
+        } else {
             MainTabView()
         }
     }
 }
 
-private struct SplashView: View {
+struct SplashView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -31,6 +51,9 @@ private struct SplashView: View {
                             endPoint: .bottomTrailing
                         )
                     )
+                ProgressView()
+                    .tint(.yellow)
+                    .padding(.top, 8)
             }
         }
     }

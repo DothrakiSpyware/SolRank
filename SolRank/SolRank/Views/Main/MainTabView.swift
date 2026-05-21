@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject private var gameVM: GameViewModel
     @State private var selectedTab = 2 // Home is default
 
     var body: some View {
@@ -25,18 +26,27 @@ struct MainTabView: View {
                 .tabItem { Label("Profile", systemImage: "gearshape.fill") }
                 .tag(4)
         }
-        .tint(.yellow)
+        .tint(Theme.gold)
         .preferredColorScheme(.dark)
+        .overlay {
+            if let event = gameVM.levelUpEvent {
+                LevelUpOverlay(event: event) { gameVM.levelUpEvent = nil }
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut, value: gameVM.levelUpEvent)
     }
 }
 
-// MARK: - Placeholder tab views
+// MARK: - Placeholder tab views (built out in later sessions)
 
 struct FeedView: View {
     var body: some View {
         NavigationStack {
             Text("Feed — Coming Soon")
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.background)
                 .navigationTitle("Feed")
         }
     }
@@ -47,50 +57,36 @@ struct CompeteView: View {
         NavigationStack {
             Text("Compete — Coming Soon")
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.background)
                 .navigationTitle("Compete")
-        }
-    }
-}
-
-struct HomeView: View {
-    var body: some View {
-        NavigationStack {
-            Text("Home — Coming Soon")
-                .foregroundStyle(.secondary)
-                .navigationTitle("Home")
-        }
-    }
-}
-
-struct CharacterView: View {
-    var body: some View {
-        NavigationStack {
-            Text("Character — Coming Soon")
-                .foregroundStyle(.secondary)
-                .navigationTitle("Character")
         }
     }
 }
 
 struct ProfileView: View {
     @EnvironmentObject private var authVM: AuthViewModel
+    @EnvironmentObject private var gameVM: GameViewModel
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
-                Button("Sign Out", role: .destructive) {
-                    authVM.signOut()
+            List {
+                Section("Account") {
+                    LabeledContent("Name", value: gameVM.character?.name ?? authVM.appUser?.displayName ?? "—")
+                    if let email = authVM.appUser?.email {
+                        LabeledContent("Email", value: email)
+                    }
+                    LabeledContent("Points", value: "\(authVM.appUser?.pointsBalance ?? 0)")
                 }
-                Spacer()
+                Section {
+                    Button("Sign Out", role: .destructive) {
+                        authVM.signOut()
+                    }
+                }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
             .navigationTitle("Profile")
         }
     }
-}
-
-#Preview {
-    let authService = AuthService()
-    let authVM = AuthViewModel(authService: authService)
-    return MainTabView().environmentObject(authVM)
 }
