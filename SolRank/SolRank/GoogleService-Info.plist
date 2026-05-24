@@ -1,49 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!--
-  IMPORTANT: Replace this entire file with the real GoogleService-Info.plist
-  downloaded from your Firebase project console at https://console.firebase.google.com
-
-  Steps:
-  1. Open your Firebase project
-  2. Go to Project Settings → General
-  3. Under "Your apps", select the iOS app (bundle ID: com.VincentAndreozzi.SolRank)
-  4. Click "Download GoogleService-Info.plist"
-  5. Replace this file with the downloaded file
-
-  The bundle ID must match: com.VincentAndreozzi.SolRank
--->
 <plist version="1.0">
 <dict>
-    <key>CLIENT_ID</key>
-    <string>REPLACE_WITH_REAL_CLIENT_ID</string>
-    <key>REVERSED_CLIENT_ID</key>
-    <string>REPLACE_WITH_REAL_REVERSED_CLIENT_ID</string>
-    <key>ANDROID_CLIENT_ID</key>
-    <string>REPLACE_WITH_REAL_ANDROID_CLIENT_ID</string>
-    <key>API_KEY</key>
-    <string>REPLACE_WITH_REAL_API_KEY</string>
-    <key>GCM_SENDER_ID</key>
-    <string>REPLACE_WITH_REAL_GCM_SENDER_ID</string>
-    <key>PLIST_VERSION</key>
-    <string>1</string>
-    <key>BUNDLE_ID</key>
-    <string>com.VincentAndreozzi.SolRank</string>
-    <key>PROJECT_ID</key>
-    <string>REPLACE_WITH_REAL_PROJECT_ID</string>
-    <key>STORAGE_BUCKET</key>
-    <string>REPLACE_WITH_REAL_STORAGE_BUCKET</string>
-    <key>IS_ADS_ENABLED</key>
-    <false/>
-    <key>IS_ANALYTICS_ENABLED</key>
-    <false/>
-    <key>IS_APPINVITE_ENABLED</key>
-    <true/>
-    <key>IS_GCM_ENABLED</key>
-    <true/>
-    <key>IS_SIGNIN_ENABLED</key>
-    <true/>
-    <key>GOOGLE_APP_ID</key>
-    <string>REPLACE_WITH_REAL_GOOGLE_APP_ID</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDRBPrRLWrhyYgXR1kEbmRseFyBaVs0CIg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1013072792633</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.VincentAndreozzi.SolRank</string>
+	<key>PROJECT_ID</key>
+	<string>solrank</string>
+	<key>STORAGE_BUCKET</key>
+	<string>solrank.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1013072792633:ios:2e92b0147ee55a5d61d1e8</string>
 </dict>
 </plist>
