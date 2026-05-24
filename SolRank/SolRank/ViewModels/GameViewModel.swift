@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import SwiftUI
 
 /// Owns the live Character state and the logging loop — the core RPG engine.
@@ -26,15 +27,15 @@ final class GameViewModel: ObservableObject {
     private var activeLeagues: [League] = []
 
     init(
-        service: GameService = GameService(),
-        feedService: FeedService = FeedService(),
-        challengeService: ChallengeService = ChallengeService(),
-        leagueService: LeagueService = LeagueService()
+        service: GameService? = nil,
+        feedService: FeedService? = nil,
+        challengeService: ChallengeService? = nil,
+        leagueService: LeagueService? = nil
     ) {
-        self.service = service
-        self.feedService = feedService
-        self.challengeService = challengeService
-        self.leagueService = leagueService
+        self.service = service ?? GameService()
+        self.feedService = feedService ?? FeedService()
+        self.challengeService = challengeService ?? ChallengeService()
+        self.leagueService = leagueService ?? LeagueService()
     }
 
     var needsOnboarding: Bool { !isLoading && character == nil }

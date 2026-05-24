@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 @MainActor
 final class ChallengeViewModel: ObservableObject {
@@ -11,8 +12,8 @@ final class ChallengeViewModel: ObservableObject {
     private let service: ChallengeService
     private var currentUserID: String?
 
-    init(service: ChallengeService = ChallengeService()) {
-        self.service = service
+    init(service: ChallengeService? = nil) {
+        self.service = service ?? ChallengeService()
     }
 
     // MARK: - Loading
