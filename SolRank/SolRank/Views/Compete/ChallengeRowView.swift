@@ -1,15 +1,5 @@
 import SwiftUI
 
-/// Resolves the accent color for a challenge from its first tracked stat.
-enum ChallengeStyle {
-    static func accent(for challenge: Challenge) -> Color {
-        guard let firstStatID = challenge.statIDs.first,
-              let category = PreloadedStats.stat(id: firstStatID)?.category
-        else { return Theme.gold }
-        return category.color
-    }
-}
-
 struct ChallengeRowView: View {
     let challenge: Challenge
     let currentUserID: String

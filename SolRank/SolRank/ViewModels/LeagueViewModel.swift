@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 @MainActor
 final class LeagueViewModel: ObservableObject {
@@ -11,8 +12,8 @@ final class LeagueViewModel: ObservableObject {
 
     private let service: LeagueService
 
-    init(service: LeagueService = LeagueService()) {
-        self.service = service
+    init(service: LeagueService? = nil) {
+        self.service = service ?? LeagueService()
     }
 
     // MARK: - Loading

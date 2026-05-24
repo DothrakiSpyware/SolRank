@@ -22,8 +22,8 @@ final class LeagueService {
     private let db = Firestore.firestore()
     private let feedService: FeedService
 
-    init(feedService: FeedService = FeedService()) {
-        self.feedService = feedService
+    init(feedService: FeedService? = nil) {
+        self.feedService = feedService ?? FeedService()
     }
 
     private var leagues: CollectionReference { db.collection(Constants.Firestore.leagues) }

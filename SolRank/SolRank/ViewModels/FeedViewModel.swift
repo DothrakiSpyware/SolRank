@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import SwiftUI
 import FirebaseFirestore
 
@@ -25,12 +26,12 @@ final class FeedViewModel: ObservableObject {
         currentUserID: String,
         currentUsername: String,
         friendIDs: [String],
-        service: FeedService = FeedService()
+        service: FeedService? = nil
     ) {
         self.currentUserID = currentUserID
         self.currentUsername = currentUsername
         self.friendIDs = friendIDs
-        self.service = service
+        self.service = service ?? FeedService()
         start()
     }
 
