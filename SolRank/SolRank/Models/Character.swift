@@ -48,7 +48,7 @@ struct Character: Identifiable, Codable {
         self.name = name
         self.appearance = appearance
         var progress: [String: CategoryProgress] = [:]
-        for category in Constants.XPCategory.allCases {
+        for category in XPCategory.allCases {
             progress[category.rawValue] = CategoryProgress()
         }
         self.categoryProgress = progress
@@ -60,10 +60,10 @@ struct Character: Identifiable, Codable {
 
     /// Overall character level = sum of all hardlocked category levels.
     var overallLevel: Int {
-        Constants.XPCategory.allCases.reduce(0) { $0 + (categoryProgress[$1.rawValue]?.level ?? 1) }
+        XPCategory.allCases.reduce(0) { $0 + (categoryProgress[$1.rawValue]?.level ?? 1) }
     }
 
-    func progress(for category: Constants.XPCategory) -> CategoryProgress {
+    func progress(for category: XPCategory) -> CategoryProgress {
         categoryProgress[category.rawValue] ?? CategoryProgress()
     }
 }

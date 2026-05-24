@@ -333,7 +333,7 @@ final class GameViewModel: ObservableObject {
         type: FeedEventType,
         message: String,
         xp: Int?,
-        category: Constants.XPCategory?
+        category: XPCategory?
     ) {
         let event = FeedEvent(
             authorID: authorID,

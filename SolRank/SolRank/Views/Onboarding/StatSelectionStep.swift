@@ -36,7 +36,7 @@ struct StatSelectionStep: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func categorySection(_ category: Constants.XPCategory, stats: [StatDefinition]) -> some View {
+    private func categorySection(_ category: XPCategory, stats: [StatDefinition]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(category.icon)

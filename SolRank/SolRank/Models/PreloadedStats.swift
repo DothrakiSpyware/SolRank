@@ -5,8 +5,8 @@ import Foundation
 enum PreloadedStats {
     static let all: [StatDefinition] = strength + endurance + wisdom + discipline + willpower + vitality
 
-    static func grouped() -> [(category: Constants.XPCategory, stats: [StatDefinition])] {
-        Constants.XPCategory.allCases.map { category in
+    static func grouped() -> [(category: XPCategory, stats: [StatDefinition])] {
+        XPCategory.allCases.map { category in
             (category, all.filter { $0.category == category })
         }
     }
