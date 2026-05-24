@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// Shared navigation state so detail screens can switch the main tab
 /// (e.g. "Log Progress" jumping to Home).
