@@ -18,7 +18,7 @@ enum StatType: String, Codable, CaseIterable {
 struct StatDefinition: Identifiable, Codable, Hashable {
     let id: String
     var name: String
-    var category: Constants.XPCategory?   // nil for custom stats (they don't feed hardlocked XP)
+    var category: XPCategory?   // nil for custom stats (they don't feed hardlocked XP)
     var type: StatType
     var unit: String?                     // e.g. "reps", "miles" — nil for boolean
     var xpPerUnit: Double                 // XP awarded per unit (numeric) or per completion (boolean)
@@ -29,7 +29,7 @@ struct StatDefinition: Identifiable, Codable, Hashable {
     init(
         id: String = UUID().uuidString,
         name: String,
-        category: Constants.XPCategory?,
+        category: XPCategory?,
         type: StatType,
         unit: String? = nil,
         xpPerUnit: Double,

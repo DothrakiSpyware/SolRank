@@ -60,13 +60,13 @@ struct CharacterView: View {
     private func statSheet(_ character: Character) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("SKILLS")
-            ForEach(Constants.XPCategory.allCases, id: \.self) { category in
+            ForEach(XPCategory.allCases, id: \.self) { category in
                 categoryRow(category, progress: character.progress(for: category))
             }
         }
     }
 
-    private func categoryRow(_ category: Constants.XPCategory, progress: CategoryProgress) -> some View {
+    private func categoryRow(_ category: XPCategory, progress: CategoryProgress) -> some View {
         HStack(spacing: 14) {
             Text(category.icon).font(.system(size: 28))
             VStack(alignment: .leading, spacing: 6) {
