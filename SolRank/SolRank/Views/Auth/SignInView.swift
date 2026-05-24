@@ -86,6 +86,30 @@ struct SignInView: View {
                 )
             }
             .buttonStyle(.plain)
+
+            #if DEBUG
+            // Debug-only: skip auth and drop straight into the app as a guest.
+            Button {
+                authVM.continueAsGuest()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .font(.system(size: 22))
+                    Text("Continue as Guest")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(Color(white: 0.18))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            #endif
         }
         .padding(.horizontal, 32)
         .padding(.bottom, 52)
