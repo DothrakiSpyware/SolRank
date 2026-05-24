@@ -117,8 +117,30 @@ final class AuthService: NSObject, ObservableObject {
 
     func signOut() throws {
         GIDSignIn.sharedInstance.signOut()
-        try Auth.auth().signOut()
+        if Auth.auth().currentUser != nil {
+            try Auth.auth().signOut()
+        }
+        // Guest sessions have no Firebase user, so clear local state directly.
+        if firebaseUser == nil {
+            appUser = nil
+            authState = .unauthenticated
+        }
     }
+
+    #if DEBUG
+    /// Debug-only bypass: skips Firebase entirely and signs in as a local guest.
+    func signInAsGuest() {
+        let guest = AppUser(
+            id: "guest-debug-user",
+            displayName: "Guest",
+            email: nil,
+            photoURL: nil
+        )
+        firebaseUser = nil
+        appUser = guest
+        authState = .authenticated
+    }
+    #endif
 
     // MARK: - Firestore user sync
 

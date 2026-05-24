@@ -55,6 +55,13 @@ final class AuthViewModel: ObservableObject {
 
     func clearError() { errorMessage = nil }
 
+    #if DEBUG
+    /// Debug-only: bypass authentication and enter the app as a local guest.
+    func continueAsGuest() {
+        authService.signInAsGuest()
+    }
+    #endif
+
     // MARK: - Helpers
 
     private func performAuth(_ operation: @escaping () async throws -> Void) async {

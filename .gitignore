@@ -1,0 +1,6 @@
+# Firebase configuration — contains API keys, must not be committed.
+# Download from Firebase Console; see README for setup.
+GoogleService-Info.plist
+
+# macOS
+.DS_Store
