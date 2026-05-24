@@ -8,6 +8,15 @@ enum Theme {
     static let gold = Color(red: 1.0, green: 0.84, blue: 0.0)
     static let silver = Color(white: 0.75)
     static let bronze = Color(red: 0.8, green: 0.5, blue: 0.2)
+    static let card = Color(white: 0.12)
+    static let goldGradient = LinearGradient(
+        colors: [
+            Color(red: 1.0, green: 0.84, blue: 0.0),
+            Color(red: 1.0, green: 0.65, blue: 0.0)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
     
     // MARK: - Challenge Colors
     static let challengeBlue = Color.blue

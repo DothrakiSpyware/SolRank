@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
 import AuthenticationServices
@@ -162,8 +163,13 @@ final class AuthService: NSObject, ObservableObject {
         guard SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes) == errSecSuccess else {
             fatalError("Unable to generate secure nonce")
         }
-        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
-        return String(randomBytes.map { charset[Int($0) % charset.count] })
+        let charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._"
+        var result = ""
+        for byte in randomBytes {
+            let idx = charset.index(charset.startIndex, offsetBy: Int(byte) % charset.count)
+            result.append(charset[idx])
+        }
+        return result
     }
 
     private func sha256(_ input: String) -> String {
