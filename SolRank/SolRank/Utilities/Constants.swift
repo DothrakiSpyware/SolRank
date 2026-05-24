@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum XPCategory: String, CaseIterable, Codable {
     case strength = "Strength"
@@ -27,6 +28,17 @@ enum XPCategory: String, CaseIterable, Codable {
         case .discipline: return "StatYellow"
         case .willpower: return "StatPurple"
         case .vitality: return "StatGreen"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .strength: return .red
+        case .endurance: return .orange
+        case .wisdom: return .blue
+        case .discipline: return .yellow
+        case .willpower: return .purple
+        case .vitality: return .green
         }
     }
 }
