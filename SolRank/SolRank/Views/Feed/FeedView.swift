@@ -14,7 +14,11 @@ struct FeedView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                filterBar
+                scopeToggle
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
+                CategoryFilterBar(selected: $viewModel.categoryFilter)
                 content
             }
             .background(Theme.background)
@@ -22,36 +26,30 @@ struct FeedView: View {
         }
     }
 
-    // MARK: - Filter bar
+    // MARK: - Scope toggle
 
-    private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                chip(title: "All", icon: nil, color: Theme.gold, filter: .allFriends)
-                chip(title: "Just Me", icon: nil, color: Theme.gold, filter: .justMe)
-                ForEach(XPCategory.allCases, id: \.self) { category in
-                    chip(title: category.rawValue, icon: category.icon, color: category.color, filter: .byCategory(category))
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+    private var scopeToggle: some View {
+        HStack(spacing: 6) {
+            scopeChip(title: "Just Me", scope: .justMe)
+            scopeChip(title: "Friends", scope: .friends)
         }
+        .padding(4)
+        .background(Capsule().fill(Color.white.opacity(0.06)))
+        .frame(maxWidth: 280)
     }
 
-    private func chip(title: String, icon: String?, color: Color, filter: FeedFilter) -> some View {
-        let isSelected = viewModel.filter == filter
+    private func scopeChip(title: String, scope: FeedScope) -> some View {
+        let selected = viewModel.scope == scope
         return Button {
-            withAnimation(.spring(response: 0.3)) { viewModel.filter = filter }
+            withAnimation(.spring(response: 0.25)) { viewModel.scope = scope }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
         } label: {
-            HStack(spacing: 5) {
-                if let icon { Text(icon).font(.system(size: 13)) }
-                Text(title).font(.system(size: 13, weight: .bold))
-            }
-            .foregroundStyle(isSelected ? .black : .white.opacity(0.8))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(isSelected ? color : Color.white.opacity(0.08))
-            .clipShape(Capsule())
+            Text(title)
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundStyle(selected ? .black : .white.opacity(0.85))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(selected ? Theme.gold : Color.clear))
         }
         .buttonStyle(.plain)
     }
@@ -75,7 +73,8 @@ struct FeedView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.top, 6)
+                .padding(.bottom, 12)
                 .animation(.spring(response: 0.45, dampingFraction: 0.85), value: viewModel.filteredEvents.map(\.id))
             }
             .refreshable { await viewModel.refresh() }

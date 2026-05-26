@@ -227,6 +227,30 @@ final class GameViewModel: ObservableObject {
         commit(char)
     }
 
+    /// Logs a "no" result for a boolean check-in today. Locks the slider for the day.
+    /// No XP, no streak change.
+    func logBooleanNo(statID: String) {
+        guard var char = character,
+              let index = char.trackedStats.firstIndex(where: { $0.id == statID }),
+              char.trackedStats[index].definition.type == .boolean
+        else { return }
+
+        char.trackedStats[index].resetDailyIfNeeded()
+        // If already logged YES today, do nothing.
+        if char.trackedStats[index].dailyValue >= 1 { return }
+        char.trackedStats[index].lastNoLogDate = Calendar.current.startOfDay(for: Date())
+        commit(char)
+    }
+
+    /// Updates the celebration emoji shown when a boolean stat is dormant-YES.
+    func setCelebrationEmoji(statID: String, emoji: String) {
+        guard var char = character,
+              let index = char.trackedStats.firstIndex(where: { $0.id == statID })
+        else { return }
+        char.trackedStats[index].celebrationEmoji = emoji
+        commit(char)
+    }
+
     func setShowOnHome(statID: String, _ show: Bool) {
         guard var char = character,
               let index = char.trackedStats.firstIndex(where: { $0.id == statID })
