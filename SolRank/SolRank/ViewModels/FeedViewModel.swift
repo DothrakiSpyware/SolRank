@@ -10,11 +10,19 @@ enum FeedFilter: Equatable, Hashable {
     case byCategory(XPCategory)
 }
 
+/// Scope dimension for the feed — independent of category filtering.
+enum FeedScope: Equatable, Hashable {
+    case justMe
+    case friends
+}
+
 @MainActor
 final class FeedViewModel: ObservableObject {
     @Published var feedEvents: [FeedEvent] = []
     @Published var isLoading = true
     @Published var filter: FeedFilter = .allFriends
+    @Published var scope: FeedScope = .friends
+    @Published var categoryFilter: XPCategory? = nil
 
     private let service: FeedService
     private let currentUserID: String
@@ -76,13 +84,19 @@ final class FeedViewModel: ObservableObject {
     // MARK: - Filtering
 
     var filteredEvents: [FeedEvent] {
-        switch filter {
-        case .allFriends:
-            return feedEvents
-        case .justMe:
-            return feedEvents.filter { $0.authorID == currentUserID }
-        case .byCategory(let category):
-            return feedEvents.filter { $0.statCategory == category }
+        feedEvents.filter { event in
+            let scopeOK: Bool
+            switch scope {
+            case .justMe: scopeOK = event.authorID == currentUserID
+            case .friends: scopeOK = true
+            }
+            let categoryOK: Bool
+            if let categoryFilter {
+                categoryOK = event.statCategory == categoryFilter
+            } else {
+                categoryOK = true
+            }
+            return scopeOK && categoryOK
         }
     }
 

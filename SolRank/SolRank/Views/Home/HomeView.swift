@@ -3,6 +3,11 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var gameVM: GameViewModel
 
+    private let gridColumns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -10,7 +15,8 @@ struct HomeView: View {
                     if gameVM.homeStats.isEmpty {
                         emptyState
                     } else {
-                        quickLogSection
+                        numericSection
+                        checkInSection
                         todaySummary
                     }
                 }
@@ -30,6 +36,8 @@ struct HomeView: View {
         gameVM.homeStats.filter { $0.definition.type == .boolean }
     }
 
+    // MARK: - Empty
+
     private var emptyState: some View {
         VStack(spacing: 12) {
             Text("⚡️").font(.system(size: 56))
@@ -45,26 +53,48 @@ struct HomeView: View {
         .padding(.top, 80)
     }
 
-    private var quickLogSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if !numericStats.isEmpty {
-                sectionTitle("QUICK LOG")
-                ForEach(numericStats) { stat in
-                    QuickLogButton(stat: stat) { amount in
-                        gameVM.logNumeric(statID: stat.id, amount: amount)
-                    }
-                }
-            }
-            if !booleanStats.isEmpty {
-                sectionTitle("TODAY'S CHECK-INS")
-                ForEach(booleanStats) { stat in
-                    BooleanLogRow(stat: stat) { done in
-                        gameVM.setBoolean(statID: stat.id, completed: done)
+    // MARK: - Numeric (2-col grid)
+
+    @ViewBuilder
+    private var numericSection: some View {
+        if !numericStats.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionTitle("TODAY'S STATS")
+                LazyVGrid(columns: gridColumns, spacing: 12) {
+                    ForEach(numericStats) { stat in
+                        StatQuickLogButton(stat: stat) { amount in
+                            gameVM.logNumeric(statID: stat.id, amount: amount)
+                        }
                     }
                 }
             }
         }
     }
+
+    // MARK: - Boolean (sliders)
+
+    @ViewBuilder
+    private var checkInSection: some View {
+        if !booleanStats.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionTitle("DAILY CHECK-INS")
+                VStack(spacing: 10) {
+                    ForEach(booleanStats) { stat in
+                        DailyCheckInSlider(
+                            stat: stat,
+                            onLogYes: { gameVM.setBoolean(statID: stat.id, completed: true) },
+                            onLogNo: { gameVM.logBooleanNo(statID: stat.id) },
+                            onChangeEmoji: { emoji in
+                                gameVM.setCelebrationEmoji(statID: stat.id, emoji: emoji)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Summary
 
     private var todaySummary: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -77,7 +107,7 @@ struct HomeView: View {
                         .foregroundStyle(.white)
                     Spacer()
                     if stat.definition.type == .boolean {
-                        Text(stat.isCompletedToday ? "Done · 🔥\(stat.currentStreak)" : "Not yet")
+                        Text(stat.isCompletedToday ? "Done · 🔥\(stat.currentStreak)" : (stat.isLoggedNoToday ? "Logged 😔" : "Not yet"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(stat.isCompletedToday ? Theme.gold : .gray)
                     } else {
@@ -101,106 +131,5 @@ struct HomeView: View {
 
     private func format(_ value: Double) -> String {
         value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
-    }
-}
-
-// MARK: - Quick log button (numeric)
-
-private struct QuickLogButton: View {
-    let stat: TrackedStat
-    let onLog: (Double) -> Void
-
-    @State private var showManualEntry = false
-    @State private var manualValue = ""
-    @State private var pulse = false
-
-    private var color: Color { stat.definition.category?.color ?? Theme.gold }
-
-    var body: some View {
-        Button {
-            onLog(stat.increment)
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.4)) { pulse = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { pulse = false }
-        } label: {
-            HStack(spacing: 14) {
-                Text(stat.definition.category?.icon ?? "⭐️")
-                    .font(.system(size: 30))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(stat.definition.name)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(.white)
-                    Text("Today: \(format(stat.dailyValue)) \(stat.definition.unit ?? "")")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.gray)
-                }
-                Spacer()
-                Text("+\(format(stat.increment))")
-                    .font(.system(size: 17, weight: .heavy))
-                    .foregroundStyle(.black)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(color)
-                    .clipShape(Capsule())
-            }
-            .padding(14)
-            .solCard()
-            .scaleEffect(pulse ? 1.03 : 1)
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(LongPressGesture().onEnded { _ in showManualEntry = true })
-        .alert("Log \(stat.definition.name)", isPresented: $showManualEntry) {
-            TextField("Amount", text: $manualValue)
-                .keyboardType(.decimalPad)
-            Button("Log") {
-                if let value = Double(manualValue), value != 0 { onLog(value) }
-                manualValue = ""
-            }
-            Button("Cancel", role: .cancel) { manualValue = "" }
-        } message: {
-            Text("Enter a specific amount to log.")
-        }
-    }
-
-    private func format(_ value: Double) -> String {
-        value == value.rounded() ? String(Int(value)) : String(format: "%.1f", value)
-    }
-}
-
-// MARK: - Boolean log row
-
-private struct BooleanLogRow: View {
-    let stat: TrackedStat
-    let onSet: (Bool) -> Void
-
-    var body: some View {
-        let done = stat.isCompletedToday
-        return HStack(spacing: 14) {
-            Text(stat.definition.category?.icon ?? "⭐️")
-                .font(.system(size: 28))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(stat.definition.name)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.white)
-                Text("🔥 \(stat.currentStreak) day streak")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.gray)
-            }
-            Spacer()
-            Button {
-                onSet(!done)
-                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-            } label: {
-                Text(done ? "Done" : "Mark")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(done ? .black : .white)
-                    .frame(width: 76, height: 38)
-                    .background(done ? Theme.gold : Color.white.opacity(0.12))
-                    .clipShape(Capsule())
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(14)
-        .solCard()
     }
 }

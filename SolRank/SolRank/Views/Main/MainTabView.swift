@@ -27,7 +27,7 @@ struct MainTabView: View {
                 .tabItem { Label("Character", systemImage: "person.fill") }
                 .tag(3)
 
-            ProfileView()
+            SettingsView()
                 .tabItem { Label("Profile", systemImage: "gearshape.fill") }
                 .tag(4)
         }
@@ -40,34 +40,5 @@ struct MainTabView: View {
             }
         }
         .animation(.easeInOut, value: gameVM.levelUpEvent)
-    }
-}
-
-// MARK: - Placeholder tab views (built out in later sessions)
-
-struct ProfileView: View {
-    @EnvironmentObject private var authVM: AuthViewModel
-    @EnvironmentObject private var gameVM: GameViewModel
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("Account") {
-                    LabeledContent("Name", value: gameVM.character?.name ?? authVM.appUser?.displayName ?? "—")
-                    if let email = authVM.appUser?.email {
-                        LabeledContent("Email", value: email)
-                    }
-                    LabeledContent("Points", value: "\(authVM.appUser?.pointsBalance ?? 0)")
-                }
-                Section {
-                    Button("Sign Out", role: .destructive) {
-                        authVM.signOut()
-                    }
-                }
-            }
-            .scrollContentBackground(.hidden)
-            .background(Theme.background)
-            .navigationTitle("Profile")
-        }
     }
 }
